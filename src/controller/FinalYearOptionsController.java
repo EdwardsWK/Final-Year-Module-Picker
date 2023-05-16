@@ -28,10 +28,8 @@ import view.FinalYearOptionsMenuBar;
 
 public class FinalYearOptionsController {
 
-	// fields to be used throughout class
 	private FinalYearOptionsRootPane view;
 	private StudentProfile model;
-
 	private CreateStudentProfilePane cspp;
 	private SelectModulesPane smp;
 	private ReserveModulesPane rmp;
@@ -40,26 +38,21 @@ public class FinalYearOptionsController {
 	private String details, reserved, selected;
 
 	public FinalYearOptionsController(StudentProfile model, FinalYearOptionsRootPane view) {
-		// initialise view and model fields
+
 		this.view = view;
 		this.model = model;
 
-		// initialise view subcontainer fields
 		cspp = view.getCreateStudentProfilePane();
 		smp = view.getSelectModulesPane();
 		rmp = view.getReserveModulesPane();
 		osp = view.getOverviewSelectionPane();
 		mstmb = view.getModuleSelectionToolMenuBar();
 
-		// add courses to combobox in create student profile pane using the
-		// buildModulesAndCourses helper method below
 		cspp.addCourseDataToComboBox(buildModulesAndCourses());
 
-		// attach event handlers to view using private helper method
 		this.attachEventHandlers();
 	}
 
-	// helper method - used to attach event handlers
 	private void attachEventHandlers() {
 		mstmb.addExitHandler(e -> System.exit(0));
 		mstmb.addAboutHandler(e -> this.alertDialogBuilder(AlertType.INFORMATION,
@@ -78,8 +71,8 @@ public class FinalYearOptionsController {
 		rmp.getRpv2().getButtons().addHandler(new ReserveTerm2AddHandler());
 		rmp.getRpv1().getButtons().removeHandler(new ReserveTerm1RemoveHandler());
 		rmp.getRpv2().getButtons().removeHandler(new ReserveTerm2RemoveHandler());
-		rmp.getRpv1().getButtons().confirmHandler(e -> rmp.switchPanel());
-		rmp.getRpv2().getButtons().confirmHandler(new ReserveConfirmHandler());
+		rmp.getRpv1().getButtons().confirmHandler(new ReserveTerm1ConfirmHandler());
+		rmp.getRpv2().getButtons().confirmHandler(new ReserveTerm2ConfirmHandler());
 		osp.saveOverviewHandler(new SaveOverviewHandler());
 	}
 
@@ -139,7 +132,7 @@ public class FinalYearOptionsController {
 				alertDialogBuilder(AlertType.ERROR, "Input Error", null, "Please input a last name");
 			} else if (cspp.getStudentEmail().isBlank()) {
 				alertDialogBuilder(AlertType.ERROR, "Input Error", null, "Please input a valid email");
-			} else if (cspp.getStudentDate().isAfter(LocalDate.now())) {
+			} else if (cspp.getStudentDate() == null || cspp.getStudentDate().isAfter(LocalDate.now())) {
 				alertDialogBuilder(AlertType.ERROR, "Input Error", null, "Please input a valid date");
 			} else {
 				model.setStudentCourse(cspp.getSelectedCourse());
@@ -157,12 +150,18 @@ public class FinalYearOptionsController {
 
 	private class SubmitHandler implements EventHandler<ActionEvent> {
 		public void handle(ActionEvent e) {
-			if (smp.getTerm1Credits().getCredits() != 60) {
+			if (smp.getTerm1Credits().getCredits() < 60) {
 				alertDialogBuilder(AlertType.ERROR, "Input Error", null,
-						"Selected term 1 credits must be exactly 60 credits");
-			} else if (smp.getTerm2Credits().getCredits() != 60) {
+						"Chosen modules total less than 60 credits for term 1");
+			} else if (smp.getTerm1Credits().getCredits() > 60) {
 				alertDialogBuilder(AlertType.ERROR, "Input Error", null,
-						"Selected term 2 credits must be exactly 60 credits");
+						"Selected modules total more than 60 credits for term 1");
+			} else if (smp.getTerm2Credits().getCredits() < 60) {
+				alertDialogBuilder(AlertType.ERROR, "Input Error", null,
+						"Chosen modules total less than 60 credits for term 2");
+			} else if (smp.getTerm2Credits().getCredits() > 60) {
+				alertDialogBuilder(AlertType.ERROR, "Input Error", null,
+						"Selected modules total more than 60 credits for term 2");
 			} else {
 				model.getAllSelectedModules().clear();
 				smp.getTerm1Selected().getModules().forEach(module -> model.addSelectedModule(module));
@@ -180,82 +179,131 @@ public class FinalYearOptionsController {
 
 	private class Term1AddHandler implements EventHandler<ActionEvent> {
 		public void handle(ActionEvent e) {
-			smp.getTerm1Credits().incrCredits(smp.getTerm1Unselected().getSelectedModule().getModuleCredits());
-			smp.getTerm1Selected().addModule(smp.getTerm1Unselected().getSelectedModule());
-			smp.getTerm1Unselected().removeModule(smp.getTerm1Unselected().getSelectedModule());
+			if (smp.getTerm1Unselected().getSelectedModule() == null) {
+				alertDialogBuilder(AlertType.ERROR, "Input Error", null, "Please chose a module before clicking add");
+			} else {
+				smp.getTerm1Credits().incrCredits(smp.getTerm1Unselected().getSelectedModule().getModuleCredits());
+				smp.getTerm1Selected().addModule(smp.getTerm1Unselected().getSelectedModule());
+				smp.getTerm1Unselected().removeModule(smp.getTerm1Unselected().getSelectedModule());
+			}
 		}
 	}
 
 	private class Term2AddHandler implements EventHandler<ActionEvent> {
 		public void handle(ActionEvent e) {
-			smp.getTerm2Credits().incrCredits(smp.getTerm2Unselected().getSelectedModule().getModuleCredits());
-			smp.getTerm2Selected().addModule(smp.getTerm2Unselected().getSelectedModule());
-			smp.getTerm2Unselected().removeModule(smp.getTerm2Unselected().getSelectedModule());
+			if (smp.getTerm2Unselected().getSelectedModule() == null) {
+				alertDialogBuilder(AlertType.ERROR, "Input Error", null, "Please chose a module before clicking add");
+			} else {
+				smp.getTerm2Credits().incrCredits(smp.getTerm2Unselected().getSelectedModule().getModuleCredits());
+				smp.getTerm2Selected().addModule(smp.getTerm2Unselected().getSelectedModule());
+				smp.getTerm2Unselected().removeModule(smp.getTerm2Unselected().getSelectedModule());
+			}
 		}
 	}
 
 	private class Term1RemoveHandler implements EventHandler<ActionEvent> {
 		public void handle(ActionEvent e) {
-			smp.getTerm1Credits().decrCredits(smp.getTerm1Selected().getSelectedModule().getModuleCredits());
-			smp.getTerm1Unselected().addModule(smp.getTerm1Selected().getSelectedModule());
-			smp.getTerm1Selected().removeModule(smp.getTerm1Selected().getSelectedModule());
+			if (smp.getTerm2Selected().getSelectedModule() == null) {
+				alertDialogBuilder(AlertType.ERROR, "Input Error", null,
+						"Please chose a module before clicking remove");
+			} else {
+				smp.getTerm1Credits().decrCredits(smp.getTerm1Selected().getSelectedModule().getModuleCredits());
+				smp.getTerm1Unselected().addModule(smp.getTerm1Selected().getSelectedModule());
+				smp.getTerm1Selected().removeModule(smp.getTerm1Selected().getSelectedModule());
+			}
 		}
 	}
 
 	private class Term2RemoveHandler implements EventHandler<ActionEvent> {
 		public void handle(ActionEvent e) {
-			smp.getTerm2Credits().decrCredits(smp.getTerm2Selected().getSelectedModule().getModuleCredits());
-			smp.getTerm2Unselected().addModule(smp.getTerm2Selected().getSelectedModule());
-			smp.getTerm2Selected().removeModule(smp.getTerm2Selected().getSelectedModule());
+			if (smp.getTerm2Selected().getSelectedModule() == null) {
+				alertDialogBuilder(AlertType.ERROR, "Input Error", null,
+						"Please chose a module before clicking remove");
+			} else {
+				smp.getTerm2Credits().decrCredits(smp.getTerm2Selected().getSelectedModule().getModuleCredits());
+				smp.getTerm2Unselected().addModule(smp.getTerm2Selected().getSelectedModule());
+				smp.getTerm2Selected().removeModule(smp.getTerm2Selected().getSelectedModule());
+			}
 		}
 	}
 
 	private class ReserveTerm1AddHandler implements EventHandler<ActionEvent> {
 		public void handle(ActionEvent e) {
-			rmp.getRpv1().incrCredits(rmp.getRpv1().getUnselectedModules().getSelectedModule().getModuleCredits());
-			rmp.getRpv1().addReservedModule(rmp.getRpv1().getUnselectedModules().getSelectedModule());
-			rmp.getRpv1().removeUnselectedModule(rmp.getRpv1().getUnselectedModules().getSelectedModule());
+			if (rmp.getRpv1().getUnselectedModules().getSelectedModule() == null) {
+				alertDialogBuilder(AlertType.ERROR, "Input Error", null, "Please chose a module before clicking add");
+			} else {
+				rmp.getRpv1().incrCredits(rmp.getRpv1().getUnselectedModules().getSelectedModule().getModuleCredits());
+				rmp.getRpv1().addReservedModule(rmp.getRpv1().getUnselectedModules().getSelectedModule());
+				rmp.getRpv1().removeUnselectedModule(rmp.getRpv1().getUnselectedModules().getSelectedModule());
+			}
 		}
+
 	}
 
 	private class ReserveTerm2AddHandler implements EventHandler<ActionEvent> {
 		public void handle(ActionEvent e) {
-			rmp.getRpv2().incrCredits(rmp.getRpv2().getUnselectedModules().getSelectedModule().getModuleCredits());
-			rmp.getRpv2().addReservedModule(rmp.getRpv2().getUnselectedModules().getSelectedModule());
-			rmp.getRpv2().removeUnselectedModule(rmp.getRpv2().getUnselectedModules().getSelectedModule());
+			if (rmp.getRpv2().getUnselectedModules().getSelectedModule() == null) {
+				alertDialogBuilder(AlertType.ERROR, "Input Error", null, "Please chose a module before clicking add");
+			} else {
+				rmp.getRpv2().incrCredits(rmp.getRpv2().getUnselectedModules().getSelectedModule().getModuleCredits());
+				rmp.getRpv2().addReservedModule(rmp.getRpv2().getUnselectedModules().getSelectedModule());
+				rmp.getRpv2().removeUnselectedModule(rmp.getRpv2().getUnselectedModules().getSelectedModule());
+			}
 		}
 	}
 
 	private class ReserveTerm1RemoveHandler implements EventHandler<ActionEvent> {
 		public void handle(ActionEvent e) {
-			rmp.getRpv1().decrCredits(rmp.getRpv1().getReservedModules().getSelectedModule().getModuleCredits());
-			rmp.getRpv1().addUnselectedModule(rmp.getRpv1().getReservedModules().getSelectedModule());
-			rmp.getRpv1().removeReservedModule(rmp.getRpv1().getReservedModules().getSelectedModule());
+			if (rmp.getRpv1().getReservedModules().getSelectedModule() == null) {
+				alertDialogBuilder(AlertType.ERROR, "Input Error", null,
+						"Please chose a module before clicking remove");
+			} else {
+				rmp.getRpv1().decrCredits(rmp.getRpv1().getReservedModules().getSelectedModule().getModuleCredits());
+				rmp.getRpv1().addUnselectedModule(rmp.getRpv1().getReservedModules().getSelectedModule());
+				rmp.getRpv1().removeReservedModule(rmp.getRpv1().getReservedModules().getSelectedModule());
+			}
 		}
 	}
 
 	private class ReserveTerm2RemoveHandler implements EventHandler<ActionEvent> {
 		public void handle(ActionEvent e) {
-			rmp.getRpv2().decrCredits(rmp.getRpv2().getReservedModules().getSelectedModule().getModuleCredits());
-			rmp.getRpv2().addUnselectedModule(rmp.getRpv2().getReservedModules().getSelectedModule());
-			rmp.getRpv2().removeReservedModule(rmp.getRpv2().getReservedModules().getSelectedModule());
+			if (rmp.getRpv2().getReservedModules().getSelectedModule() == null) {
+				alertDialogBuilder(AlertType.ERROR, "Input Error", null, "Please chose a module before clicking remove");
+			} else {
+				rmp.getRpv2().decrCredits(rmp.getRpv2().getReservedModules().getSelectedModule().getModuleCredits());
+				rmp.getRpv2().addUnselectedModule(rmp.getRpv2().getReservedModules().getSelectedModule());
+				rmp.getRpv2().removeReservedModule(rmp.getRpv2().getReservedModules().getSelectedModule());
+			}
 		}
 	}
 
-	private class ReserveConfirmHandler implements EventHandler<ActionEvent> {
+	private class ReserveTerm1ConfirmHandler implements EventHandler<ActionEvent> {
 		public void handle(ActionEvent e) {
-			if (rmp.getRpv1().getCredits() != 30) {
+			if (rmp.getRpv1().getCredits() < 30) {
 				alertDialogBuilder(AlertType.ERROR, "Input Error", null,
-						"Reserved term 1 credits must be exactly 30 credits");
-			} else if (rmp.getRpv2().getCredits() != 30) {
+						"Reserved modules total less than 30 credits for term 1. Please add the remaining number of credits");
+			} else if (rmp.getRpv1().getCredits() > 30) {
 				alertDialogBuilder(AlertType.ERROR, "Input Error", null,
-						"Reserved term 2 credits must be exactly 30 credits");
+						"Reserved modules total more than 30 credits for term 1. Please remove the excess number of credits");
 			} else {
+				rmp.switchPanel();
+			}
+		}
+	}
+
+	private class ReserveTerm2ConfirmHandler implements EventHandler<ActionEvent> {
+		public void handle(ActionEvent e) {
+			if (rmp.getRpv2().getCredits() < 30) {
+				alertDialogBuilder(AlertType.ERROR, "Input Error", null,
+						"Reserved modules total less than 30 credits for term 2. Please add the remaining number of credits");
+			} else if (rmp.getRpv2().getCredits() > 30) {
+				alertDialogBuilder(AlertType.ERROR, "Input Error", null,
+						"Reserved modules total more than 30 credits for term 2. Please remove the excess number of credits");
+			} else {
+				model.getAllReservedModules().clear();
 				rmp.getRpv1().getReservedModules().getModules().forEach(module -> model.addReservedModule(module));
 				rmp.getRpv2().getReservedModules().getModules().forEach(module -> model.addReservedModule(module));
-
 				populateOverview();
-
 				view.changeTab(3);
 			}
 		}
@@ -273,6 +321,7 @@ public class FinalYearOptionsController {
 				alertDialogBuilder(AlertType.ERROR, "About", null, ex.getMessage());
 			}
 		}
+
 	}
 
 	// helper method - builds modules and course data and returns courses within an
