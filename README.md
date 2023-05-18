@@ -1,5 +1,5 @@
 # JavaFX Final Year Module Selection Tool
-This repository contains the coursework for the JavaFX Final Year Module Selection Tool, which is a project for a university module. This coursework was created solely by myself, [Wil K Edwards](https://github.com/.EdwardsWK).
+This repository contains the coursework for the JavaFX Final Year Module Selection Tool, which is a project for a university module. This coursework was created solely by myself, [Wil K Edwards](https://github.com/.EdwardsWK). At this time, the coursework is still being edited and enhanced
 
 The objective of this assessment is to design and implement an object-oriented system using Java classes and advanced libraries within the Java SDK. The project involves building a graphical user interface (GUI) that allows second-year undergraduate computing students to select their final year module options based on their chosen course of study.
 
