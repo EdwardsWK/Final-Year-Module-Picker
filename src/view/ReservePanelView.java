@@ -63,6 +63,7 @@ public class ReservePanelView extends GridPane {
 
 	public void addReservedModule(Module module) {
 		reservedModules.addModule(module);
+		incrCredits(module.getModuleCredits());
 	}
 
 	public void removeUnselectedModule(Module module) {
@@ -71,6 +72,7 @@ public class ReservePanelView extends GridPane {
 
 	public void removeReservedModule(Module module) {
 		reservedModules.removeModule(module);
+		decrCredits(module.getModuleCredits());
 	}
 
 	public void incrCredits(int credits) {

@@ -8,23 +8,21 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.PrintWriter;
 import java.time.LocalDate;
-import java.util.ArrayList;
 
-import binaryio.Song;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import model.Course;
-import model.RunPlan;
 import model.Module;
+import model.RunPlan;
 import model.StudentProfile;
+import view.CreateStudentProfilePane;
+import view.FinalYearOptionsMenuBar;
 import view.FinalYearOptionsRootPane;
 import view.OverviewSelectionPane;
 import view.ReserveModulesPane;
 import view.SelectModulesPane;
-import view.CreateStudentProfilePane;
-import view.FinalYearOptionsMenuBar;
 
 public class FinalYearOptionsController {
 
@@ -56,12 +54,12 @@ public class FinalYearOptionsController {
 	private void attachEventHandlers() {
 		mstmb.addExitHandler(e -> System.exit(0));
 		mstmb.addAboutHandler(e -> this.alertDialogBuilder(AlertType.INFORMATION,
-				"Final Year Module Selection Tool v1.0", null,
+				"Final Year Module Selection Tool v1.1", null,
 				"This Final Year Module Selection Tool was made as a coursework requirement by Wil K Edwards :)"));
 		mstmb.addSaveHandler(new SaveProfileHandler());
 		mstmb.addLoadHandler(new LoadProfileHandler());
 		cspp.addCreateStudentProfileHandler(new CreateStudentProfileHandler());
-		smp.resetHandler(e -> populateModuleViews());
+		smp.resetHandler(new ResetHandler());
 		smp.submitHandler(new SubmitHandler());
 		smp.getTerm1Buttons().addHandler(new Term1AddHandler());
 		smp.getTerm2Buttons().addHandler(new Term2AddHandler());
@@ -110,12 +108,10 @@ public class FinalYearOptionsController {
 				alertDialogBuilder(AlertType.ERROR, "Loading Failed", "File failed to load", c.toString());
 			}
 
-			cspp.clearAll();
-			smp.clearAll();
-			rmp.clearAll();
-			osp.clearAll();
-			cspp.loadProfile(model);
+			clearPanes();
+			populateProfile();
 			populateModuleViews();
+			populateReserveModules();
 			populateOverview();
 
 		}
@@ -124,16 +120,25 @@ public class FinalYearOptionsController {
 	// event handler (currently empty), which can be used for creating a profile
 	private class CreateStudentProfileHandler implements EventHandler<ActionEvent> {
 		public void handle(ActionEvent e) {
-			if (!cspp.getStudentPnumber().toUpperCase().startsWith("P")) {
-				alertDialogBuilder(AlertType.ERROR, "Input Error", null, "Please input a valid student number");
-			} else if (cspp.getFirstName().isBlank()) {
-				alertDialogBuilder(AlertType.ERROR, "Input Error", null, "Please input a first name");
-			} else if (cspp.getSurname().isBlank()) {
-				alertDialogBuilder(AlertType.ERROR, "Input Error", null, "Please input a last name");
-			} else if (cspp.getStudentEmail().isBlank()) {
-				alertDialogBuilder(AlertType.ERROR, "Input Error", null, "Please input a valid email");
-			} else if (cspp.getStudentDate() == null || cspp.getStudentDate().isAfter(LocalDate.now())) {
-				alertDialogBuilder(AlertType.ERROR, "Input Error", null, "Please input a valid date");
+			String error = "";
+			
+			if (!cspp.getStudentPnumber().matches("[p P][0-9]+")) {
+				error = "Please input a valid student number\n";
+			}
+			if (!cspp.getFirstName().matches("^[a-zA-Z\\s]+") || (cspp.getFirstName().length() < 2) || (cspp.getFirstName().length() > 25)) {
+				error += "Please input a valid first name\n";
+			}
+			if (!cspp.getSurname().matches("^[a-zA-Z\\s]+") || (cspp.getSurname().length() < 2) || (cspp.getSurname().length() > 25)) {
+				error += "Please input a valid surname\n";
+			}
+			if (!(cspp.getStudentEmail().contains("@")) || !(cspp.getStudentEmail().contains("."))) {
+				error += "Please input a valid email\n";
+			}
+			if (cspp.getStudentDate() == null || cspp.getStudentDate().isAfter(LocalDate.now())) {
+				error += "Please input a valid date\n";
+			} 
+			if (error != "") {
+				alertDialogBuilder(AlertType.ERROR, "Error", null, error);
 			} else {
 				model.setStudentCourse(cspp.getSelectedCourse());
 				model.setStudentPnumber(cspp.getStudentPnumber());
@@ -148,19 +153,27 @@ public class FinalYearOptionsController {
 		}
 	}
 
+	private class ResetHandler implements EventHandler<ActionEvent> {
+		public void handle(ActionEvent e) {
+			model.getAllSelectedModules().clear();
+			model.getAllReservedModules().clear();
+			populateModuleViews();
+		}
+	}
+
 	private class SubmitHandler implements EventHandler<ActionEvent> {
 		public void handle(ActionEvent e) {
 			if (smp.getTerm1Credits().getCredits() < 60) {
-				alertDialogBuilder(AlertType.ERROR, "Input Error", null,
+				alertDialogBuilder(AlertType.ERROR, "Error", null,
 						"Chosen modules total less than 60 credits for term 1");
 			} else if (smp.getTerm1Credits().getCredits() > 60) {
-				alertDialogBuilder(AlertType.ERROR, "Input Error", null,
+				alertDialogBuilder(AlertType.ERROR, "Error", null,
 						"Selected modules total more than 60 credits for term 1");
 			} else if (smp.getTerm2Credits().getCredits() < 60) {
-				alertDialogBuilder(AlertType.ERROR, "Input Error", null,
+				alertDialogBuilder(AlertType.ERROR, "Error", null,
 						"Chosen modules total less than 60 credits for term 2");
 			} else if (smp.getTerm2Credits().getCredits() > 60) {
-				alertDialogBuilder(AlertType.ERROR, "Input Error", null,
+				alertDialogBuilder(AlertType.ERROR, "Error", null,
 						"Selected modules total more than 60 credits for term 2");
 			} else {
 				model.getAllSelectedModules().clear();
@@ -168,9 +181,7 @@ public class FinalYearOptionsController {
 				smp.getTerm2Selected().getModules().forEach(module -> model.addSelectedModule(module));
 				smp.getYearLong().getModules().forEach(module -> model.addSelectedModule(module));
 
-				rmp.clearAll();
-				rmp.getRpv1().getUnselectedModules().setModules(smp.getTerm1Unselected().getModules());
-				rmp.getRpv2().getUnselectedModules().setModules(smp.getTerm2Unselected().getModules());
+				populateReserveModules();
 
 				view.changeTab(2);
 			}
@@ -180,7 +191,7 @@ public class FinalYearOptionsController {
 	private class Term1AddHandler implements EventHandler<ActionEvent> {
 		public void handle(ActionEvent e) {
 			if (smp.getTerm1Unselected().getSelectedModule() == null) {
-				alertDialogBuilder(AlertType.ERROR, "Input Error", null, "Please chose a module before clicking add");
+				alertDialogBuilder(AlertType.ERROR, "Error", null, "Please chose a module before clicking add");
 			} else {
 				smp.getTerm1Credits().incrCredits(smp.getTerm1Unselected().getSelectedModule().getModuleCredits());
 				smp.getTerm1Selected().addModule(smp.getTerm1Unselected().getSelectedModule());
@@ -192,7 +203,7 @@ public class FinalYearOptionsController {
 	private class Term2AddHandler implements EventHandler<ActionEvent> {
 		public void handle(ActionEvent e) {
 			if (smp.getTerm2Unselected().getSelectedModule() == null) {
-				alertDialogBuilder(AlertType.ERROR, "Input Error", null, "Please chose a module before clicking add");
+				alertDialogBuilder(AlertType.ERROR, "Error", null, "Please chose a module before clicking add");
 			} else {
 				smp.getTerm2Credits().incrCredits(smp.getTerm2Unselected().getSelectedModule().getModuleCredits());
 				smp.getTerm2Selected().addModule(smp.getTerm2Unselected().getSelectedModule());
@@ -203,9 +214,10 @@ public class FinalYearOptionsController {
 
 	private class Term1RemoveHandler implements EventHandler<ActionEvent> {
 		public void handle(ActionEvent e) {
-			if (smp.getTerm2Selected().getSelectedModule() == null) {
-				alertDialogBuilder(AlertType.ERROR, "Input Error", null,
-						"Please chose a module before clicking remove");
+			if (smp.getTerm1Selected().getSelectedModule() == null) {
+				alertDialogBuilder(AlertType.ERROR, "Error", null, "Please chose a module before clicking remove");
+			} else if (smp.getTerm1Selected().getSelectedModule().isMandatory()) {
+				alertDialogBuilder(AlertType.ERROR, "Error", null, "Mandatory modules cannot be removed");
 			} else {
 				smp.getTerm1Credits().decrCredits(smp.getTerm1Selected().getSelectedModule().getModuleCredits());
 				smp.getTerm1Unselected().addModule(smp.getTerm1Selected().getSelectedModule());
@@ -217,8 +229,9 @@ public class FinalYearOptionsController {
 	private class Term2RemoveHandler implements EventHandler<ActionEvent> {
 		public void handle(ActionEvent e) {
 			if (smp.getTerm2Selected().getSelectedModule() == null) {
-				alertDialogBuilder(AlertType.ERROR, "Input Error", null,
-						"Please chose a module before clicking remove");
+				alertDialogBuilder(AlertType.ERROR, "Error", null, "Please chose a module before clicking remove");
+			} else if (smp.getTerm2Selected().getSelectedModule().isMandatory()) {
+				alertDialogBuilder(AlertType.ERROR, "Error", null, "Mandatory modules cannot be removed");
 			} else {
 				smp.getTerm2Credits().decrCredits(smp.getTerm2Selected().getSelectedModule().getModuleCredits());
 				smp.getTerm2Unselected().addModule(smp.getTerm2Selected().getSelectedModule());
@@ -230,7 +243,7 @@ public class FinalYearOptionsController {
 	private class ReserveTerm1AddHandler implements EventHandler<ActionEvent> {
 		public void handle(ActionEvent e) {
 			if (rmp.getRpv1().getUnselectedModules().getSelectedModule() == null) {
-				alertDialogBuilder(AlertType.ERROR, "Input Error", null, "Please chose a module before clicking add");
+				alertDialogBuilder(AlertType.ERROR, "Error", null, "Please chose a module before clicking add");
 			} else {
 				rmp.getRpv1().incrCredits(rmp.getRpv1().getUnselectedModules().getSelectedModule().getModuleCredits());
 				rmp.getRpv1().addReservedModule(rmp.getRpv1().getUnselectedModules().getSelectedModule());
@@ -243,7 +256,7 @@ public class FinalYearOptionsController {
 	private class ReserveTerm2AddHandler implements EventHandler<ActionEvent> {
 		public void handle(ActionEvent e) {
 			if (rmp.getRpv2().getUnselectedModules().getSelectedModule() == null) {
-				alertDialogBuilder(AlertType.ERROR, "Input Error", null, "Please chose a module before clicking add");
+				alertDialogBuilder(AlertType.ERROR, "Error", null, "Please chose a module before clicking add");
 			} else {
 				rmp.getRpv2().incrCredits(rmp.getRpv2().getUnselectedModules().getSelectedModule().getModuleCredits());
 				rmp.getRpv2().addReservedModule(rmp.getRpv2().getUnselectedModules().getSelectedModule());
@@ -255,8 +268,7 @@ public class FinalYearOptionsController {
 	private class ReserveTerm1RemoveHandler implements EventHandler<ActionEvent> {
 		public void handle(ActionEvent e) {
 			if (rmp.getRpv1().getReservedModules().getSelectedModule() == null) {
-				alertDialogBuilder(AlertType.ERROR, "Input Error", null,
-						"Please chose a module before clicking remove");
+				alertDialogBuilder(AlertType.ERROR, "Error", null, "Please chose a module before clicking remove");
 			} else {
 				rmp.getRpv1().decrCredits(rmp.getRpv1().getReservedModules().getSelectedModule().getModuleCredits());
 				rmp.getRpv1().addUnselectedModule(rmp.getRpv1().getReservedModules().getSelectedModule());
@@ -268,7 +280,7 @@ public class FinalYearOptionsController {
 	private class ReserveTerm2RemoveHandler implements EventHandler<ActionEvent> {
 		public void handle(ActionEvent e) {
 			if (rmp.getRpv2().getReservedModules().getSelectedModule() == null) {
-				alertDialogBuilder(AlertType.ERROR, "Input Error", null, "Please chose a module before clicking remove");
+				alertDialogBuilder(AlertType.ERROR, "Error", null, "Please chose a module before clicking remove");
 			} else {
 				rmp.getRpv2().decrCredits(rmp.getRpv2().getReservedModules().getSelectedModule().getModuleCredits());
 				rmp.getRpv2().addUnselectedModule(rmp.getRpv2().getReservedModules().getSelectedModule());
@@ -280,10 +292,10 @@ public class FinalYearOptionsController {
 	private class ReserveTerm1ConfirmHandler implements EventHandler<ActionEvent> {
 		public void handle(ActionEvent e) {
 			if (rmp.getRpv1().getCredits() < 30) {
-				alertDialogBuilder(AlertType.ERROR, "Input Error", null,
+				alertDialogBuilder(AlertType.ERROR, "Error", null,
 						"Reserved modules total less than 30 credits for term 1. Please add the remaining number of credits");
 			} else if (rmp.getRpv1().getCredits() > 30) {
-				alertDialogBuilder(AlertType.ERROR, "Input Error", null,
+				alertDialogBuilder(AlertType.ERROR, "Error", null,
 						"Reserved modules total more than 30 credits for term 1. Please remove the excess number of credits");
 			} else {
 				rmp.switchPanel();
@@ -294,10 +306,10 @@ public class FinalYearOptionsController {
 	private class ReserveTerm2ConfirmHandler implements EventHandler<ActionEvent> {
 		public void handle(ActionEvent e) {
 			if (rmp.getRpv2().getCredits() < 30) {
-				alertDialogBuilder(AlertType.ERROR, "Input Error", null,
+				alertDialogBuilder(AlertType.ERROR, "Error", null,
 						"Reserved modules total less than 30 credits for term 2. Please add the remaining number of credits");
 			} else if (rmp.getRpv2().getCredits() > 30) {
-				alertDialogBuilder(AlertType.ERROR, "Input Error", null,
+				alertDialogBuilder(AlertType.ERROR, "Error", null,
 						"Reserved modules total more than 30 credits for term 2. Please remove the excess number of credits");
 			} else {
 				model.getAllReservedModules().clear();
@@ -391,19 +403,28 @@ public class FinalYearOptionsController {
 		return courses;
 	}
 
+	private void populateProfile() {
+		cspp.setSelectedCourse(model.getStudentCourse().getCourseName());
+		cspp.setStudentPnumber(model.getStudentPnumber());
+		cspp.setFirstName(model.getStudentName().getFirstName());
+		cspp.setSurname(model.getStudentName().getFamilyName());
+		cspp.setStudentEmail(model.getStudentEmail());
+		cspp.setStudentDate(model.getSubmissionDate());
+	}
+
 	private void populateModuleViews() {
 		smp.clearAll();
 
 		for (Module module : cspp.getSelectedCourse().getAllModulesOnCourse()) {
 			if (module.getDelivery() == RunPlan.TERM_1) {
-				if (module.isMandatory()) {
+				if (module.isMandatory() || model.getAllSelectedModules().contains(module)) {
 					smp.getTerm1Selected().addModule(module);
 					smp.getTerm1Credits().incrCredits(module.getModuleCredits());
 				} else {
 					smp.getTerm1Unselected().addModule(module);
 				}
 			} else if (module.getDelivery() == RunPlan.TERM_2) {
-				if (module.isMandatory()) {
+				if (module.isMandatory() || model.getAllSelectedModules().contains(module)) {
 					smp.getTerm2Selected().addModule(module);
 					smp.getTerm2Credits().incrCredits(module.getModuleCredits());
 				} else {
@@ -413,6 +434,26 @@ public class FinalYearOptionsController {
 				smp.getYearLong().addModule(module);
 				smp.getTerm1Credits().incrCredits(module.getModuleCredits() / 2);
 				smp.getTerm2Credits().incrCredits(module.getModuleCredits() / 2);
+			}
+		}
+	}
+
+	private void populateReserveModules() {
+		rmp.clearAll();
+
+		for (Module module : smp.getTerm1Unselected().getModules()) {
+			if (model.getAllReservedModules().contains(module)) {
+				rmp.getRpv1().addReservedModule(module);
+			} else {
+				rmp.getRpv1().addUnselectedModule(module);
+			}
+		}
+
+		for (Module module : smp.getTerm2Unselected().getModules()) {
+			if (model.getAllReservedModules().contains(module)) {
+				rmp.getRpv2().addReservedModule(module);
+			} else {
+				rmp.getRpv2().addUnselectedModule(module);
 			}
 		}
 	}
@@ -447,6 +488,13 @@ public class FinalYearOptionsController {
 		}
 		;
 		osp.setReservedModules(reserved);
+	}
+
+	private void clearPanes() {
+		cspp.clearAll();
+		smp.clearAll();
+		rmp.clearAll();
+		osp.clearAll();
 	}
 
 	private void alertDialogBuilder(AlertType type, String title, String header, String content) {

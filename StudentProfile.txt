@@ -1,3 +1,45 @@
-null
-null
-null
+STUDENT DETAILS
+===============
+Student Number: P123
+Name: wIL EDWARDS
+Email: w
+Date: 2023-06-01
+Course: Software Engineering
+
+SELECTED MODULES
+===============
+Module code: CTEC3451, Module name: Development Project
+Module credits: 30, Mandatory: true, Delivery: YEAR_LONG
+
+Module code: CTEC3606, Module name: Multi-service Networks 2
+Module credits: 15, Mandatory: false, Delivery: TERM_2
+
+Module code: CTEC3902, Module name: Rigorous Systems
+Module credits: 15, Mandatory: true, Delivery: TERM_2
+
+Module code: IMAT3406, Module name: Fuzzy Logic and Knowledge Based Systems
+Module credits: 15, Mandatory: false, Delivery: TERM_1
+
+Module code: IMAT3423, Module name: Systems Building: Methods
+Module credits: 15, Mandatory: true, Delivery: TERM_1
+
+Module code: IMAT3611, Module name: Computer Ethics and Privacy
+Module credits: 15, Mandatory: false, Delivery: TERM_1
+
+Module code: IMAT3614, Module name: Big Data and Business Models
+Module credits: 15, Mandatory: false, Delivery: TERM_2
+
+RESERVED MODULES
+===============
+Module code: CTEC3110, Module name: Secure Web Application Development
+Module credits: 15, Mandatory: false, Delivery: TERM_1
+
+Module code: CTEC3410, Module name: Web Application Penetration Testing
+Module credits: 15, Mandatory: false, Delivery: TERM_2
+
+Module code: CTEC3904, Module name: Functional Software Development
+Module credits: 15, Mandatory: false, Delivery: TERM_2
+
+Module code: CTEC3911, Module name: Mobile Application Development
+Module credits: 15, Mandatory: false, Delivery: TERM_1
+
