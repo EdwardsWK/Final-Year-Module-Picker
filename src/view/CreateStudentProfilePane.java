@@ -16,7 +16,6 @@ import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import model.Course;
 import model.Name;
-import model.StudentProfile;
 
 public class CreateStudentProfilePane extends GridPane {
 
@@ -52,7 +51,6 @@ public class CreateStudentProfilePane extends GridPane {
 		txtSurname = new TextField();
 		txtPnumber = new TextField();
 		txtEmail = new TextField();
-
 		inputDate = new DatePicker();
 
 		// initialise create profile button
@@ -126,30 +124,36 @@ public class CreateStudentProfilePane extends GridPane {
 		txtSurname.clear();
 		txtPnumber.clear();
 		txtEmail.clear();
-		inputDate = new DatePicker();
+		inputDate.setValue(null);
 		cboCourses.getSelectionModel().select(0);
 	}
 
-	public void loadProfile(StudentProfile file) {
-		Course course = file.getStudentCourse();
-		String studentNumber = file.getStudentPnumber();
-		String firstName = file.getStudentName().getFirstName();
-		String surname = file.getStudentName().getFamilyName();
-		String emailAddress = file.getStudentEmail();
-		LocalDate date = file.getSubmissionDate();
-
-		if (course.getCourseName().contains("Software")) {
+	public void setSelectedCourse(String course) {
+		if (course.startsWith("Software")) {
 			cboCourses.getSelectionModel().select(1);
 		} else {
 			cboCourses.getSelectionModel().select(0);
 		}
-
-		txtFirstName.setText(firstName);
-		txtSurname.setText(surname);
-		txtPnumber.setText(studentNumber);
-		txtEmail.setText(emailAddress);
-		inputDate.setValue(date);
-
 	}
 
+	public void setStudentPnumber(String studentPnumber) {
+		txtPnumber.setText(studentPnumber);
+	}
+
+	public void setFirstName(String firstName) {
+		txtFirstName.setText(firstName);
+	}
+
+	public void setSurname(String surname) {
+		txtSurname.setText(surname);
+	}
+
+	public void setStudentEmail(String studentEmail) {
+		txtEmail.setText(studentEmail);
+	}
+
+	public void setStudentDate(LocalDate submissionDate) {
+		inputDate.setValue(submissionDate);
+	}
+	
 }
