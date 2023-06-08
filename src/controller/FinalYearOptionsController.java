@@ -2,12 +2,16 @@ package controller;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.PrintWriter;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Scanner;
 
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
@@ -54,7 +58,7 @@ public class FinalYearOptionsController {
 	private void attachEventHandlers() {
 		mstmb.addExitHandler(e -> System.exit(0));
 		mstmb.addAboutHandler(e -> this.alertDialogBuilder(AlertType.INFORMATION,
-				"Final Year Module Selection Tool v1.1", null,
+				"Final Year Module Selection Tool v1.5", null,
 				"This Final Year Module Selection Tool was made as a coursework requirement by Wil K Edwards :)"));
 		mstmb.addSaveHandler(new SaveProfileHandler());
 		mstmb.addLoadHandler(new LoadProfileHandler());
@@ -120,26 +124,8 @@ public class FinalYearOptionsController {
 	// event handler (currently empty), which can be used for creating a profile
 	private class CreateStudentProfileHandler implements EventHandler<ActionEvent> {
 		public void handle(ActionEvent e) {
-			String error = "";
 			
-			if (!cspp.getStudentPnumber().matches("[p P][0-9]+")) {
-				error = "Please input a valid student number\n";
-			}
-			if (!cspp.getFirstName().matches("^[a-zA-Z\\s]+") || (cspp.getFirstName().length() < 2) || (cspp.getFirstName().length() > 25)) {
-				error += "Please input a valid first name\n";
-			}
-			if (!cspp.getSurname().matches("^[a-zA-Z\\s]+") || (cspp.getSurname().length() < 2) || (cspp.getSurname().length() > 25)) {
-				error += "Please input a valid surname\n";
-			}
-			if (!(cspp.getStudentEmail().contains("@")) || !(cspp.getStudentEmail().contains("."))) {
-				error += "Please input a valid email\n";
-			}
-			if (cspp.getStudentDate() == null || cspp.getStudentDate().isAfter(LocalDate.now())) {
-				error += "Please input a valid date\n";
-			} 
-			if (error != "") {
-				alertDialogBuilder(AlertType.ERROR, "Error", null, error);
-			} else {
+			if (valid()) {
 				model.setStudentCourse(cspp.getSelectedCourse());
 				model.setStudentPnumber(cspp.getStudentPnumber());
 				model.setStudentName(cspp.getStudentName());
@@ -336,73 +322,76 @@ public class FinalYearOptionsController {
 
 	}
 
-	// helper method - builds modules and course data and returns courses within an
-	// array
 	private Course[] buildModulesAndCourses() {
-		Module imat3423 = new Module("IMAT3423", "Systems Building: Methods", 15, true, RunPlan.TERM_1);
-		Module ctec3451 = new Module("CTEC3451", "Development Project", 30, true, RunPlan.YEAR_LONG);
-		Module ctec3902_SoftEng = new Module("CTEC3902", "Rigorous Systems", 15, true, RunPlan.TERM_2);
-		Module ctec3902_CompSci = new Module("CTEC3902", "Rigorous Systems", 15, false, RunPlan.TERM_2);
-		Module ctec3110 = new Module("CTEC3110", "Secure Web Application Development", 15, false, RunPlan.TERM_1);
-		Module ctec3605 = new Module("CTEC3605", "Multi-service Networks 1", 15, false, RunPlan.TERM_1);
-		Module ctec3606 = new Module("CTEC3606", "Multi-service Networks 2", 15, false, RunPlan.TERM_2);
-		Module ctec3410 = new Module("CTEC3410", "Web Application Penetration Testing", 15, false, RunPlan.TERM_2);
-		Module ctec3904 = new Module("CTEC3904", "Functional Software Development", 15, false, RunPlan.TERM_2);
-		Module ctec3905 = new Module("CTEC3905", "Front-End Web Development", 15, false, RunPlan.TERM_2);
-		Module ctec3906 = new Module("CTEC3906", "Interaction Design", 15, false, RunPlan.TERM_1);
-		Module ctec3911 = new Module("CTEC3911", "Mobile Application Development", 15, false, RunPlan.TERM_1);
-		Module imat3410 = new Module("IMAT3104", "Database Management and Programming", 15, false, RunPlan.TERM_2);
-		Module imat3406 = new Module("IMAT3406", "Fuzzy Logic and Knowledge Based Systems", 15, false, RunPlan.TERM_1);
-		Module imat3611 = new Module("IMAT3611", "Computer Ethics and Privacy", 15, false, RunPlan.TERM_1);
-		Module imat3613 = new Module("IMAT3613", "Data Mining", 15, false, RunPlan.TERM_1);
-		Module imat3614 = new Module("IMAT3614", "Big Data and Business Models", 15, false, RunPlan.TERM_2);
-		Module imat3428_CompSci = new Module("IMAT3428", "Information Technology Services Practice", 15, false,
-				RunPlan.TERM_2);
+	    List<Course> courses = new ArrayList<>();
 
-		Course compSci = new Course("Computer Science");
-		compSci.addModuleToCourse(imat3423);
-		compSci.addModuleToCourse(ctec3451);
-		compSci.addModuleToCourse(ctec3902_CompSci);
-		compSci.addModuleToCourse(ctec3110);
-		compSci.addModuleToCourse(ctec3605);
-		compSci.addModuleToCourse(ctec3606);
-		compSci.addModuleToCourse(ctec3410);
-		compSci.addModuleToCourse(ctec3904);
-		compSci.addModuleToCourse(ctec3905);
-		compSci.addModuleToCourse(ctec3906);
-		compSci.addModuleToCourse(ctec3911);
-		compSci.addModuleToCourse(imat3410);
-		compSci.addModuleToCourse(imat3406);
-		compSci.addModuleToCourse(imat3611);
-		compSci.addModuleToCourse(imat3613);
-		compSci.addModuleToCourse(imat3614);
-		compSci.addModuleToCourse(imat3428_CompSci);
+	    try {
+	        File file = new File("modules.csv");
+	        Scanner sc = new Scanner(file);
 
-		Course softEng = new Course("Software Engineering");
-		softEng.addModuleToCourse(imat3423);
-		softEng.addModuleToCourse(ctec3451);
-		softEng.addModuleToCourse(ctec3902_SoftEng);
-		softEng.addModuleToCourse(ctec3110);
-		softEng.addModuleToCourse(ctec3605);
-		softEng.addModuleToCourse(ctec3606);
-		softEng.addModuleToCourse(ctec3410);
-		softEng.addModuleToCourse(ctec3904);
-		softEng.addModuleToCourse(ctec3905);
-		softEng.addModuleToCourse(ctec3906);
-		softEng.addModuleToCourse(ctec3911);
-		softEng.addModuleToCourse(imat3410);
-		softEng.addModuleToCourse(imat3406);
-		softEng.addModuleToCourse(imat3611);
-		softEng.addModuleToCourse(imat3613);
-		softEng.addModuleToCourse(imat3614);
+	        while (sc.hasNextLine()) {
+	            String line = sc.nextLine();
+	            String[] data = line.split(",");
 
-		Course[] courses = new Course[2];
-		courses[0] = compSci;
-		courses[1] = softEng;
+	            // Create the module
+	            Module module = new Module(data[0], data[1], Integer.parseInt(data[2]), Boolean.parseBoolean(data[3]), RunPlan.valueOf(data[4]));
 
-		return courses;
+	            // Check if the course exists in the list of courses
+	            Course course = findCourse(courses, data[5]);
+
+	            // If the course doesn't exist, create a new course and add it to the list
+	            if (course == null) {
+	                course = new Course(data[5]);
+	                courses.add(course);
+	            }
+
+	            // Add the module to the course
+	            course.addModuleToCourse(module);
+	        }
+
+	        sc.close();
+	    } catch (FileNotFoundException e) {
+	        e.printStackTrace();
+	    }
+
+	    return courses.toArray(new Course[0]);
 	}
 
+	private Course findCourse(List<Course> courses, String courseName) {
+	    for (Course course : courses) {
+	        if (course.getCourseName().equals(courseName)) {
+	            return course;
+	        }
+	    }
+	    return null;
+	}
+	
+	private Boolean valid() {
+		String error = "";
+		Boolean isValid = true;
+		
+		if (!cspp.getStudentPnumber().matches("[p P][0-9]+")) {
+			error = "Please input a valid student number\n";
+		}
+		if (!cspp.getFirstName().matches("^[a-zA-Z\\s]+") || (cspp.getFirstName().length() < 2) || (cspp.getFirstName().length() > 25)) {
+			error += "Please input a valid first name\n";
+		}
+		if (!cspp.getSurname().matches("^[a-zA-Z\\s]+") || (cspp.getSurname().length() < 2) || (cspp.getSurname().length() > 25)) {
+			error += "Please input a valid surname\n";
+		}
+		if (!(cspp.getStudentEmail().contains("@")) || !(cspp.getStudentEmail().matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,6}$"))) {
+			error += "Please input a valid email\n";
+		}
+		if (cspp.getStudentDate() == null || cspp.getStudentDate().isAfter(LocalDate.now())) {
+			error += "Please input a valid date\n";
+		}
+		if (error != "") {
+			alertDialogBuilder(AlertType.ERROR, "Error", null, error);
+			isValid = false;
+		}
+		return isValid;
+	}
+	
 	private void populateProfile() {
 		cspp.setSelectedCourse(model.getStudentCourse().getCourseName());
 		cspp.setStudentPnumber(model.getStudentPnumber());
